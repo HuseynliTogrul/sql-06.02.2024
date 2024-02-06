@@ -1,4 +1,5 @@
-﻿using Shop.App.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using Shop.App.Models;
 
 ShopContext shopContext = new ShopContext();
 
@@ -10,11 +11,24 @@ while (request != 0)
     switch (request)
     {
         case 1:
-            await CreateCategory();
-            Console.WriteLine("Successful");
+            await CreateCategoryAsync();
+            Console.WriteLine("Successful Created");
             break;
         case 2:
-
+            await RemoveCategoryAsync();
+            Console.WriteLine("Successful Removed");
+            break;
+        case 3:
+            await UpdatedCategoryAsync();
+            Console.WriteLine("Successful Updated");
+            break;
+        case 4:
+            await GetAllCategoryAsync();
+            Console.WriteLine("Showed");
+            break;
+        case 5:
+            await GetCategoryAsync();
+            Console.WriteLine("Found");
             break;
 
         default:
@@ -43,7 +57,7 @@ void ShohMenu()
     Console.WriteLine("0.Close");
 }
 
-async Task CreateCategory()
+async Task CreateCategoryAsync()
 {
     Console.WriteLine("Add Name");
     string Name = Console.ReadLine();
@@ -51,6 +65,12 @@ async Task CreateCategory()
     while (string.IsNullOrWhiteSpace(Name))
     {
         Console.WriteLine("Add Name");
+        Name = Console.ReadLine();
+    }
+
+    while (await shopContext.Categories.AnyAsync(x => x.Name.Trim().ToLower() == Name.Trim().ToLower()))
+    {
+        Console.WriteLine("Already category");
         Name = Console.ReadLine();
     }
 
@@ -63,3 +83,75 @@ async Task CreateCategory()
     await shopContext.SaveChangesAsync();
 }
 
+async Task UpdatedCategoryAsync()
+{
+    Console.WriteLine("Add Id");
+    int.TryParse(Console.ReadLine(),out int Id);
+
+    Category? category = await shopContext.Categories.Where(x=>x.Id==Id).FirstOrDefaultAsync();
+
+    while (category == null)
+    {
+        Console.WriteLine("Category not found");
+        return;
+    }
+
+    Console.WriteLine("Add Name");
+    string? Name = Console.ReadLine();
+
+    while (string.IsNullOrWhiteSpace(Name))
+    {
+        Console.WriteLine("Add Name");
+        Name = Console.ReadLine();
+    }
+
+    while (await shopContext.Categories.AnyAsync(x => x.Name.Trim().ToLower() == Name.Trim().ToLower() && x.Id!=Id))
+    {
+        Console.WriteLine("Already category");
+        Name = Console.ReadLine();
+    }
+
+    category.Name = Name;
+    await shopContext.SaveChangesAsync();
+}
+
+async Task RemoveCategoryAsync()
+{
+    Console.WriteLine("Add Id");
+    int.TryParse(Console.ReadLine(), out int Id);
+
+    Category? category = await shopContext.Categories.Where(x => x.Id == Id).FirstOrDefaultAsync();
+
+    while (category == null)
+    {
+        Console.WriteLine("Category not found");
+        return;
+    }
+
+    category.IsDeleted = true;
+    await shopContext.SaveChangesAsync();
+}
+
+async Task GetAllCategoryAsync()
+{
+    IQueryable<Category> query = shopContext.Categories.Where(x=>x.IsDeleted).AsNoTracking();
+
+    IEnumerable<Category> categories = await query.ToListAsync();
+
+    foreach (var item in categories)
+    {
+        Console.WriteLine($"Id:{item.Id} Name:{item.Name}");
+    }
+}
+
+async Task GetCategoryAsync()
+{
+    Console.WriteLine("Add Id");
+    int.TryParse(Console.ReadLine(), out int Id);
+
+    IQueryable<Category> query = shopContext.Categories.Where(x => x.IsDeleted && x.Id==Id).AsNoTracking();
+
+    Category? category = await query.FirstOrDefaultAsync();
+
+    Console.WriteLine($"Id:{category.Id} Name:{category.Name}");
+}
