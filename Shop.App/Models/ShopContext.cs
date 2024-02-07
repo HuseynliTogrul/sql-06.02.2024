@@ -65,8 +65,7 @@ namespace Shop.App.Models
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            var entries = ChangeTracker.Entries().Where(x=>x.Entity is BaseModel && 
-                (x.State == EntityState.Added || x.State == EntityState.Modified))
+            var entries = ChangeTracker.Entries<BaseModel>()
                 .ToList();
 
             foreach (var item in entries)
